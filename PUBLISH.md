@@ -1,11 +1,11 @@
-# Publish metadata — PKG-sim
+# Publish metadata — PKG-li-sim
 
 | Field | Value |
 |-------|--------|
-| **PKG id** | `PKG-sim` |
-| **Registry name** | `sim` (lip, phase 8d) |
-| **Maintainer** | li-langverse |
-| **Repository** | https://github.com/li-langverse/sim |
+| **PKG id** | `PKG-li-sim` |
+| **Registry name** | `li-sim` (lip, phase 8d) |
+| **Maintainer** | (author) |
+| **Repository** | https://github.com/li-langverse/li-sim |
 | **License** | Apache-2.0 OR MIT (SPDX) |
 
 ## Exports (v1)
