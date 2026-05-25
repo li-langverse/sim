@@ -1,298 +1,295 @@
-# PKG-li-sim — unified simulation step API (PH-SIM-1, SIM-2 replay).
-# sim_step_physics → physics.runtime when cross-package types stabilize.
 
-type SimWorld = object
-  public tick: int
-  public dt: float
-  public headless: int
-  public profile: int
-  public law_mode: int
-  public custom_law_id: int
-
-type SimReplay = object
-  public capacity: int
-  public count: int
-  public last_tick: int
+# Core simulation API: adjustable output detail, algorithm ids, composable entry points.
+# Machine-readable summaries: benchmarks/harness/sim_summary.py (li_sim_summary_v1).
+# Registry: benchmarks/competitive/algo_registry.json (126 algo_ids).
+# See docs/ecosystem/sim-output-contract.md
 
 def li_sim_version() -> int
   requires true
-  ensures result == 7
+  ensures result == 1
   decreases 0
 =
-  return 7
+  return 1
 
-# PH-PHYS-CUSTOM — 0 realistic stack, 1 arbitrary-only, 2 hybrid (see physics.custom).
-def sim_law_mode_realistic() -> int
+def output_detail_summary() -> int
   requires true
   ensures result == 0
   decreases 0
 =
   return 0
 
-def sim_law_mode_arbitrary() -> int
+def output_detail_fields() -> int
   requires true
   ensures result == 1
   decreases 0
 =
   return 1
 
-def sim_law_mode_hybrid() -> int
+def output_detail_debug() -> int
   requires true
   ensures result == 2
   decreases 0
 =
   return 2
 
-def sim_profile_game() -> int
-  requires true
-  ensures result == 0
-  decreases 0
-=
-  return 0
-
-def sim_profile_rl() -> int
-  requires true
-  ensures result == 1
-  decreases 0
-=
-  return 1
-
-def sim_profile_automotive() -> int
-  requires true
-  ensures result == 2
-  decreases 0
-=
-  return 2
-
-def sim_profile_robotics() -> int
+def output_detail_repro() -> int
   requires true
   ensures result == 3
   decreases 0
 =
   return 3
 
-def sim_profile_scientific() -> int
+def summary_format_json() -> int
+  requires true
+  ensures result == 0
+  decreases 0
+=
+  return 0
+
+def summary_format_json_min() -> int
+  requires true
+  ensures result == 1
+  decreases 0
+=
+  return 1
+
+def summary_format_yaml() -> int
+  requires true
+  ensures result == 2
+  decreases 0
+=
+  return 2
+
+type SimOutputSpec = object
+  public detail: int
+  public write_json: int
+  public summary_format: int
+
+type SimRunResult = object
+  public ok: int
+  public algo_id: int
+  public vertical_id: int
+  public checksum: float
+  public detail_emitted: int
+
+def output_spec_default() -> SimOutputSpec
+  requires true
+  ensures result.detail == 0
+  ensures result.write_json == 1
+  ensures result.summary_format == 1
+  decreases 0
+=
+  var s: SimOutputSpec
+  s.detail = 0
+  s.write_json = 1
+  s.summary_format = summary_format_json_min()
+  return s
+
+def output_spec_from_detail(detail: int) -> SimOutputSpec
+  requires detail >= 0
+  requires detail <= 3
+  ensures result.detail == detail
+  ensures result.write_json == 1
+  decreases 0
+=
+  var s: SimOutputSpec
+  s.detail = detail
+  s.write_json = 1
+  s.summary_format = summary_format_json_min()
+  return s
+
+def vertical_md_lennard_jones() -> int
+  requires true
+  ensures result == 1
+  decreases 0
+=
+  return 1
+
+def vertical_pde_heat_2d() -> int
+  requires true
+  ensures result == 2
+  decreases 0
+=
+  return 2
+
+def vertical_gaming_rigid() -> int
+  requires true
+  ensures result == 3
+  decreases 0
+=
+  return 3
+
+def vertical_qm_dft() -> int
   requires true
   ensures result == 4
   decreases 0
 =
   return 4
 
-def sim_profile_additive() -> int
+def algo_registry_count() -> int
   requires true
-  ensures result == 5
+  ensures result == 126
   decreases 0
 =
-  return 5
+  return 126
 
-def sim_profile_drug_design() -> int
+def algo_id_min() -> int
   requires true
-  ensures result == 6
+  ensures result == 1
   decreases 0
 =
-  return 6
+  return 1
 
-def sim_profile_bioeng() -> int
+def algo_id_max() -> int
   requires true
-  ensures result == 7
+  ensures result == 903
   decreases 0
 =
-  return 7
+  return 903
 
-def sim_profile_mmo() -> int
+def algo_in_registry(algo_id: int) -> int
   requires true
-  ensures result == 8
+  ensures result >= 0
+  ensures result <= 1
   decreases 0
 =
-  return 8
-
-def sim_world_new(dt: float, headless: int) -> SimWorld
-  requires dt > 0.0
-  ensures result.tick == 0
-  ensures result.dt == dt
-  ensures result.profile == 0
-  decreases 0
-=
-  var w: SimWorld
-  w.tick = 0
-  w.dt = dt
-  w.headless = headless
-  w.profile = sim_profile_game()
-  w.law_mode = sim_law_mode_realistic()
-  w.custom_law_id = 0
-  return w
-
-def sim_world_with_profile(dt: float, headless: int, profile: int) -> SimWorld
-  requires dt > 0.0
-  requires profile >= 0
-  requires profile <= 8
-  ensures result.profile == profile
-  decreases profile
-=
-  var w: SimWorld = sim_world_new(dt, headless)
-  w.profile = profile
-  return w
-
-def sim_reset(world: SimWorld) -> unit
-  requires world.dt > 0.0
-  ensures world.tick == 0
-  decreases 0
-=
-  world.tick = 0
-
-def sim_step(world: SimWorld) -> unit
-  requires world.dt > 0.0
-  ensures world.tick >= 1
-  decreases world.tick
-=
-  world.tick = world.tick + 1
-
-def sim_set_law_mode(world: SimWorld, mode: int, custom_law_id: int) -> unit
-  requires mode >= 0
-  requires mode <= 2
-  requires custom_law_id >= 0
-  ensures world.law_mode == mode
-  ensures world.custom_law_id == custom_law_id
-  decreases mode
-=
-  world.law_mode = mode
-  world.custom_law_id = custom_law_id
-
-# Advances tick; caller runs physics.custom.custom_law_apply when law_mode != realistic.
-def sim_step_arbitrary(world: SimWorld) -> unit
-  requires world.dt > 0.0
-  requires world.law_mode == sim_law_mode_arbitrary()
-  ensures world.tick >= 1
-  decreases world.tick
-=
-  world.tick = world.tick + 1
-
-def sim_replay_new(capacity: int) -> SimReplay
-  requires capacity > 0
-  ensures result.capacity == capacity
-  ensures result.count == 0
-  ensures result.last_tick == 0
-  decreases capacity
-=
-  var r: SimReplay
-  r.capacity = capacity
-  r.count = 0
-  r.last_tick = 0
-  return r
-
-def sim_replay_push(replay: SimReplay, tick: int) -> unit
-  requires replay.capacity > 0
-  requires tick >= 0
-  ensures replay.last_tick == tick
-  decreases replay.count
-=
-  replay.count = replay.count + 1
-  if replay.count > replay.capacity:
-    replay.count = replay.capacity
-  replay.last_tick = tick
-
-def sim_tick_budget_for_mmo(tick_hz: int) -> int
-  requires tick_hz > 0
-  requires tick_hz <= 128
-  ensures result == tick_hz
-  decreases tick_hz
-=
-  return tick_hz
-
-def sim_replay_last_tick(replay: SimReplay) -> int
-  requires true
-  ensures result == replay.last_tick
-  decreases 0
-=
-  return replay.last_tick
-
-# Composable smoke: arbitrary law_mode without exporting SimWorld to importers.
-def sim_arbitrary_law_smoke() -> int
-  requires true
-  ensures result == 0
-  decreases 0
-=
-  var w: SimWorld = sim_world_new(1.0, 1)
-  w.law_mode = sim_law_mode_arbitrary()
-  w.custom_law_id = 1
-  w.tick = w.tick + 1
-  return 0
-
-# MMO shard tick budget: sim_step with mmo profile (no PhysicsWorld embed).
-def sim_mmo_profile_step_smoke() -> int
-  requires true
-  ensures result == 0
-  decreases 0
-=
-  var w: SimWorld = sim_world_with_profile(1.0, 1, sim_profile_mmo())
-  w.tick = w.tick + 1
-  return 0
-
-# PH-PHYS-CUSTOM full stack (pairs with physics.custom in composable gate).
-def sim_custom_physics_stack_smoke() -> int
-  requires true
-  ensures result == 0
-  decreases 0
-=
-  return sim_arbitrary_law_smoke()
-
-# Deferred until PhysicsWorld visible across packages (see PH-SIM program).
-def sim_physics_runtime_deferred() -> int
-  requires true
-  ensures result == 0
-  decreases 0
-=
-  return 0
-
-# Author-facing placeholder until sim_step_physics(world, physics_world) unifies packages.
-def sim_step_physics_stub(tick: int, tier: int, dt_millis: int) -> int
-  requires tick >= 0
-  requires tier >= 0
-  requires tier <= 3
-  requires dt_millis > 0
-  ensures result == tick + 1
-  decreases tick
-=
-  return tick + 1
-
-def sim_step_physics_smoke() -> int
-  requires true
-  ensures result == 0
-  decreases 0
-=
-  if sim_step_physics_stub(0, 2, 16) != 1:
+  if algo_id < 1:
+    return 0
+  if algo_id <= 19:
     return 1
-  return sim_physics_runtime_deferred()
-
-# Alias for authors (same as sim_step_physics_stub).
-def step_physics(tick: int, tier: int, dt_millis: int) -> int
-  requires tick >= 0
-  requires tier >= 0
-  requires tier <= 3
-  requires dt_millis > 0
-  ensures result == tick + 1
-  decreases tick
-=
-  return sim_step_physics_stub(tick, tier, dt_millis)
-
-def sim_game_physics_tick_quick_smoke() -> int
-  requires true
-  ensures result == 0
-  decreases 0
-=
-  if step_physics(0, 2, 16) != 1:
-    return 1
+  if algo_id >= 101:
+    if algo_id <= 117:
+      return 1
+  if algo_id >= 201:
+    if algo_id <= 216:
+      return 1
+  if algo_id >= 301:
+    if algo_id <= 305:
+      return 1
+  if algo_id >= 401:
+    if algo_id <= 432:
+      return 1
+  if algo_id >= 501:
+    if algo_id <= 505:
+      return 1
+  if algo_id >= 511:
+    if algo_id <= 514:
+      return 1
+  if algo_id >= 521:
+    if algo_id <= 523:
+      return 1
+  if algo_id >= 601:
+    if algo_id <= 610:
+      return 1
+  if algo_id >= 701:
+    if algo_id <= 707:
+      return 1
+  if algo_id >= 801:
+    if algo_id <= 805:
+      return 1
+  if algo_id >= 901:
+    if algo_id <= 903:
+      return 1
   return 0
 
-def sim_world_studio_stack_smoke() -> int
+def algo_family_num(algo_id: int) -> int
   requires true
-  ensures result == 0
+  ensures result >= 0
   decreases 0
 =
-  if sim_custom_physics_stack_smoke() != 0:
+  if algo_id >= 1:
+    if algo_id <= 19:
+      return 1
+  if algo_id >= 101:
+    if algo_id <= 117:
+      return 2
+  if algo_id >= 201:
+    if algo_id <= 216:
+      return 3
+  if algo_id >= 301:
+    if algo_id <= 305:
+      return 4
+  if algo_id >= 401:
+    if algo_id <= 432:
+      return 5
+  if algo_id >= 501:
+    if algo_id <= 505:
+      return 6
+  if algo_id >= 511:
+    if algo_id <= 514:
+      return 7
+  if algo_id >= 521:
+    if algo_id <= 523:
+      return 8
+  if algo_id >= 601:
+    if algo_id <= 610:
+      return 9
+  if algo_id >= 701:
+    if algo_id <= 707:
+      return 10
+  if algo_id >= 801:
+    if algo_id <= 805:
+      return 11
+  if algo_id >= 901:
+    if algo_id <= 903:
+      return 12
+  return 0
+
+def algo_num_dot_axpy() -> int
+  requires true
+  ensures result == 1
+  decreases 0
+=
+  return 1
+
+def algo_md_lj_cutoff_mic() -> int
+  requires true
+  ensures result == 101
+  decreases 0
+=
+  return 101
+
+def algo_md_integrator_verlet() -> int
+  requires true
+  ensures result == 102
+  decreases 0
+=
+  return 102
+
+def algo_pde_heat_explicit_2d() -> int
+  requires true
+  ensures result == 201
+  decreases 0
+=
+  return 201
+
+def algo_rigid_semi_implicit() -> int
+  requires true
+  ensures result == 301
+  decreases 0
+=
+  return 301
+
+def algo_qm_dft_scf_energy() -> int
+  requires true
+  ensures result == 418
+  decreases 0
+=
+  return 418
+
+def algo_robo_multibody_step() -> int
+  requires true
+  ensures result == 801
+  decreases 0
+=
+  return 801
+
+def run_result_ok(r: SimRunResult) -> int
+  requires true
+  ensures result >= 0
+  ensures result <= 1
+  decreases 0
+=
+  if r.ok == 1:
     return 1
-  if sim_step_physics_smoke() != 0:
-    return 2
-  if sim_mmo_profile_step_smoke() != 0:
-    return 3
   return 0
