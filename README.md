@@ -1,4 +1,4 @@
-# li-sim
+﻿# li-sim
 
 Li package li-sim
 
@@ -22,4 +22,4 @@ See `PUBLISH.md` and `docs/traceability.md`.
 
 ## License
 
-Apache-2.0 OR MIT
+GPL-3.0-or-later OR MIT
